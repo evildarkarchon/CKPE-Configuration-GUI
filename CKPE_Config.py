@@ -1,14 +1,33 @@
+from __future__ import annotations
+
 import sys
 from pathlib import Path
-from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
-                              QScrollArea, QTabWidget, QGridLayout, QLabel,
-                              QCheckBox, QSpinBox, QLineEdit, QPushButton,
-                              QFileDialog, QMessageBox, QComboBox, QStackedWidget, QHBoxLayout)
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QFileDialog,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QSpinBox,
+    QStackedWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
+
 
 class BrandingWidget(QWidget):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -29,7 +48,7 @@ class BrandingWidget(QWidget):
         subheading.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Create version
-        version = QLabel("v1.0")
+        version = QLabel("v0.1.0")
         version_font = QFont()
         version_font.setPointSize(12)
         version.setFont(version_font)
@@ -45,7 +64,7 @@ class BrandingWidget(QWidget):
         layout.addStretch()
 
 class ConfigEntry:
-    def __init__(self, name, value, tooltip="", line_number=None):
+    def __init__(self, name: str, value: str, tooltip: str = "", line_number: int | None = None) -> None:
         self.name = name
         self.value = value
         self.tooltip = tooltip
@@ -53,15 +72,15 @@ class ConfigEntry:
         self.inline_comment = ""
 
 class ConfigSection:
-    def __init__(self, name, tooltip="", line_number=None):
+    def __init__(self, name: str, tooltip: str = "", line_number: int | None = None) -> None:
         self.name = name
         self.tooltip = tooltip
         self.line_number = line_number
-        self.entries = []
+        self.entries: list[ConfigEntry] = []
 
-def parse_comments(lines, start_idx):
+def parse_comments(lines: list[str], start_idx: int) -> str:
     """Extract comments above a section or entry."""
-    comments = []
+    comments: list[str] = []
     idx = start_idx - 1
     while idx >= 0 and (lines[idx].strip().startswith(';') or not lines[idx].strip()):
         if lines[idx].strip().startswith(';'):
@@ -69,9 +88,9 @@ def parse_comments(lines, start_idx):
         idx -= 1
     return '\n'.join(comments)
 
-def parse_ini_with_comments(file_path):
+def parse_ini_with_comments(file_path: str) -> tuple[list[ConfigSection], list[str]]:
     """Parse INI file while preserving comments and line numbers."""
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with Path(file_path).open(encoding='utf-8') as f:
         lines = f.readlines()
 
     sections = []
@@ -109,7 +128,7 @@ def parse_ini_with_comments(file_path):
     return sections, lines
 
 class ConfigEditor(QMainWindow):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("CreationKit Platform Extended INI Editor")
         self.setMinimumSize(800, 600)
@@ -140,14 +159,15 @@ class ConfigEditor(QMainWindow):
         load_button.clicked.connect(self.load_ini)
         save_button.clicked.connect(self.save_ini)
 
-        self.sections = []
-        self.widgets = {}
-        self.original_lines = []
+        self.sections: list[ConfigSection] = []
+        self.widgets: dict[tuple[str, str], QWidget] = {}
+        self.original_lines: list[str] = []
 
 
-    def create_widget_for_value(self, value, entry_name, section_name):
+    def create_widget_for_value(self, value: str, entry_name: str, section_name: str) -> QWidget:
         """Create appropriate widget based on value type and section."""
         # Special case for Hotkeys and Log sections as well as the uTintMaskResolution entry in the Facegen section
+        widget: QWidget
         if section_name == "Hotkeys" or entry_name == "uTintMaskResolution" or section_name == "Log":
             widget = QLineEdit(value)
             return widget
@@ -206,7 +226,7 @@ class ConfigEditor(QMainWindow):
             widget = QLineEdit(value)
         return widget
 
-    def create_section_widget(self, section):
+    def create_section_widget(self, section: ConfigSection) -> QWidget:
         """Create a widget for a section with proper layout and alignment."""
         container = QWidget()
         layout = QVBoxLayout(container)
@@ -241,7 +261,7 @@ class ConfigEditor(QMainWindow):
 
         return container
 
-    def refresh_ui(self):
+    def refresh_ui(self) -> None:
         """Refresh the UI with current sections and entries."""
         self.tab_widget.clear()
         self.widgets.clear()
@@ -261,7 +281,7 @@ class ConfigEditor(QMainWindow):
         # Switch to the editor view now that we have content
         self.stacked_widget.setCurrentWidget(self.tab_widget)
 
-    def verify_filename(self, filepath, operation="load"):
+    def verify_filename(self, filepath: str, operation: str = "load") -> bool:
         """Verify that the file has the correct name."""
         expected_name = "CreationKitPlatformExtended.ini"
         actual_name = Path(filepath).name
@@ -275,7 +295,7 @@ class ConfigEditor(QMainWindow):
             return False
         return True
 
-    def load_ini(self):
+    def load_ini(self) -> None:
         """Load and parse INI file."""
         file_name, _ = QFileDialog.getOpenFileName(
             self, "Open INI file", "", "INI file (CreationKitPlatformExtended.ini)",)
@@ -289,7 +309,7 @@ class ConfigEditor(QMainWindow):
         self.current_file = file_name
         self.refresh_ui()
 
-    def save_ini(self):
+    def save_ini(self) -> None:
         """Save current configuration while preserving comments and formatting."""
         if not hasattr(self, 'current_file'):
             file_name, _ = QFileDialog.getSaveFileName(
@@ -315,24 +335,30 @@ class ConfigEditor(QMainWindow):
                 elif isinstance(widget, QComboBox):
                     value = str(widget.currentData())
                 else:
-                    value = widget.text()
+                    value = widget.text() if isinstance(widget, QLineEdit) else ""
 
                 if hasattr(entry, 'inline_comment') and entry.inline_comment:
                     new_line = f"{entry.name}={value}\t\t\t; {entry.inline_comment}"
                 else:
                     new_line = f"{entry.name}={value}"
 
-                leading_space = len(new_lines[entry.line_number]) - len(new_lines[entry.line_number].lstrip())
-                new_lines[entry.line_number] = ' ' * leading_space + new_line + '\n'
+                if entry.line_number is not None:
+                    leading_space = len(new_lines[entry.line_number]) - len(new_lines[entry.line_number].lstrip())
+                else:
+                    leading_space = 0
+                if entry.line_number is not None:
+                    new_lines[entry.line_number] = ' ' * leading_space + new_line + '\n'
+                else:
+                    new_lines.append(new_line + '\n')
 
         try:
-            with open(self.current_file, 'w', encoding='utf-8') as f:
+            with Path(self.current_file).open('w', encoding='utf-8') as f:
                 f.writelines(new_lines)
             QMessageBox.information(self, "Success", "File saved successfully!")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Error saving file: {str(e)}")
+        except OSError as e:
+            QMessageBox.critical(self, "Error", f"Error saving file: {e!s}")
 
-def main():
+def main() -> None:
     app = QApplication(sys.argv)
     window = ConfigEditor()
     window.show()
