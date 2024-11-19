@@ -63,6 +63,7 @@ class BrandingWidget(QWidget):
         layout.addWidget(version)
         layout.addStretch()
 
+
 class ConfigEntry:
     def __init__(self, name: str, value: str, tooltip: str = "", line_number: int | None = None) -> None:
         self.name = name
@@ -71,6 +72,7 @@ class ConfigEntry:
         self.line_number = line_number
         self.inline_comment = ""
 
+
 class ConfigSection:
     def __init__(self, name: str, tooltip: str = "", line_number: int | None = None) -> None:
         self.name = name
@@ -78,19 +80,21 @@ class ConfigSection:
         self.line_number = line_number
         self.entries: list[ConfigEntry] = []
 
+
 def parse_comments(lines: list[str], start_idx: int) -> str:
     """Extract comments above a section or entry."""
     comments: list[str] = []
     idx = start_idx - 1
-    while idx >= 0 and (lines[idx].strip().startswith(';') or not lines[idx].strip()):
-        if lines[idx].strip().startswith(';'):
+    while idx >= 0 and (lines[idx].strip().startswith(";") or not lines[idx].strip()):
+        if lines[idx].strip().startswith(";"):
             comments.insert(0, lines[idx].strip()[1:].strip())
         idx -= 1
-    return '\n'.join(comments)
+    return "\n".join(comments)
+
 
 def parse_ini_with_comments(file_path: str) -> tuple[list[ConfigSection], list[str]]:
     """Parse INI file while preserving comments and line numbers."""
-    with Path(file_path).open(encoding='utf-8') as f:
+    with Path(file_path).open(encoding="utf-8") as f:
         lines = f.readlines()
 
     sections = []
@@ -98,26 +102,26 @@ def parse_ini_with_comments(file_path: str) -> tuple[list[ConfigSection], list[s
 
     for i, line in enumerate(lines):
         line = line.strip()
-        if not line or line.startswith(';'):
+        if not line or line.startswith(";"):
             continue
 
-        if line.startswith('[') and line.endswith(']'):
+        if line.startswith("[") and line.endswith("]"):
             section_name = line[1:-1]
             tooltip = parse_comments(lines, i)
             current_section = ConfigSection(section_name, tooltip, i)
             sections.append(current_section)
-        elif '=' in line and current_section:
-            name, value = line.split('=', 1)
+        elif "=" in line and current_section:
+            name, value = line.split("=", 1)
             name = name.strip()
             value = value.strip()
 
             tooltip = parse_comments(lines, i)
             inline_comment = ""
-            if ';' in value:
-                value, inline_comment = value.split(';', 1)
+            if ";" in value:
+                value, inline_comment = value.split(";", 1)
                 value = value.strip()
                 if tooltip:
-                    tooltip += '\n' + inline_comment.strip()
+                    tooltip += "\n" + inline_comment.strip()
                 else:
                     tooltip = inline_comment.strip()
 
@@ -126,6 +130,7 @@ def parse_ini_with_comments(file_path: str) -> tuple[list[ConfigSection], list[s
             current_section.entries.append(entry)
 
     return sections, lines
+
 
 class ConfigEditor(QMainWindow):
     def __init__(self) -> None:
@@ -163,7 +168,6 @@ class ConfigEditor(QMainWindow):
         self.widgets: dict[tuple[str, str], QWidget] = {}
         self.original_lines: list[str] = []
 
-
     def create_widget_for_value(self, value: str, entry_name: str, section_name: str) -> QWidget:
         """Create appropriate widget based on value type and section."""
         # Special case for Hotkeys and Log sections as well as the uTintMaskResolution entry in the Facegen section
@@ -194,7 +198,7 @@ class ConfigEditor(QMainWindow):
                 "EASTEUROPE_CHARSET": 238,
                 "RUSSIAN_CHARSET": 204,
                 "MAC_CHARSET": 77,
-                "BALTIC_CHARSET": 186
+                "BALTIC_CHARSET": 186,
             }
             for charset_name, charset_value in charsets.items():
                 widget.addItem(charset_name, charset_value)
@@ -204,20 +208,16 @@ class ConfigEditor(QMainWindow):
         # Special case for uUIDarkThemeId - limit to values 0, 1, 2
         if entry_name == "uUIDarkThemeId":
             widget = QComboBox()
-            themes = {
-                "Lighter": 0,
-                "Darker": 1,
-                "Custom": 2
-            }
+            themes = {"Lighter": 0, "Darker": 1, "Custom": 2}
             for theme_name, theme_value in themes.items():
                 widget.addItem(theme_name, theme_value)
             widget.setCurrentIndex(widget.findData(int(value)))
             return widget
 
         # For other entries, use the normal logic
-        if value.lower() in ('true', 'false'):
+        if value.lower() in ("true", "false"):
             widget = QCheckBox()
-            widget.setChecked(value.lower() == 'true')
+            widget.setChecked(value.lower() == "true")
         elif value.isdigit():
             widget = QSpinBox()
             widget.setMaximum(999999)
@@ -288,9 +288,7 @@ class ConfigEditor(QMainWindow):
 
         if actual_name != expected_name:
             QMessageBox.warning(
-                self,
-                "Invalid Filename",
-                f"The {operation} filename must be '{expected_name}'\nSelected file: '{actual_name}'"
+                self, "Invalid Filename", f"The {operation} filename must be '{expected_name}'\nSelected file: '{actual_name}'"
             )
             return False
         return True
@@ -298,7 +296,11 @@ class ConfigEditor(QMainWindow):
     def load_ini(self) -> None:
         """Load and parse INI file."""
         file_name, _ = QFileDialog.getOpenFileName(
-            self, "Open INI file", "", "INI file (CreationKitPlatformExtended.ini)",)
+            self,
+            "Open INI file",
+            "",
+            "INI file (CreationKitPlatformExtended.ini)",
+        )
         if not file_name:
             return
 
@@ -311,9 +313,10 @@ class ConfigEditor(QMainWindow):
 
     def save_ini(self) -> None:
         """Save current configuration while preserving comments and formatting."""
-        if not hasattr(self, 'current_file'):
+        if not hasattr(self, "current_file"):
             file_name, _ = QFileDialog.getSaveFileName(
-                self, "Save INI file", "CreationKitPlatformExtended.ini", "INI files (CreationKitPlatformExtended.ini)")
+                self, "Save INI file", "CreationKitPlatformExtended.ini", "INI files (CreationKitPlatformExtended.ini)"
+            )
             if not file_name:
                 return
 
@@ -337,7 +340,7 @@ class ConfigEditor(QMainWindow):
                 else:
                     value = widget.text() if isinstance(widget, QLineEdit) else ""
 
-                if hasattr(entry, 'inline_comment') and entry.inline_comment:
+                if hasattr(entry, "inline_comment") and entry.inline_comment:
                     new_line = f"{entry.name}={value}\t\t\t; {entry.inline_comment}"
                 else:
                     new_line = f"{entry.name}={value}"
@@ -347,22 +350,24 @@ class ConfigEditor(QMainWindow):
                 else:
                     leading_space = 0
                 if entry.line_number is not None:
-                    new_lines[entry.line_number] = ' ' * leading_space + new_line + '\n'
+                    new_lines[entry.line_number] = " " * leading_space + new_line + "\n"
                 else:
-                    new_lines.append(new_line + '\n')
+                    new_lines.append(new_line + "\n")
 
         try:
-            with Path(self.current_file).open('w', encoding='utf-8') as f:
+            with Path(self.current_file).open("w", encoding="utf-8") as f:
                 f.writelines(new_lines)
             QMessageBox.information(self, "Success", "File saved successfully!")
         except OSError as e:
             QMessageBox.critical(self, "Error", f"Error saving file: {e!s}")
+
 
 def main() -> None:
     app = QApplication(sys.argv)
     window = ConfigEditor()
     window.show()
     sys.exit(app.exec())
+
 
 if __name__ == "__main__":
     main()
